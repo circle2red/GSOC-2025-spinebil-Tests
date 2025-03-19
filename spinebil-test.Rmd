@@ -167,5 +167,93 @@ The script can be further improved in the following ways:
 
 > Hard: Write a simulation to check the minimum and maximum values that we might observe for any 2D pattern for the stringy index available in tourr package. Report the data generated for testing, and the minimum and maximum values that would be expected.
 
-Todo.
+First we list all available objects in package `tourr` using `ls("package:tourr")`. It turns out that the `stringy()`  would help. By checking its usage, we found calling `tourr::stringy()` returns another callable that refers to `cassowaryr::sc_stringy()`. 
+
+This method computes stringy scagnostic measure using MST. From its example, we can see how the `stringy index` works:
+
+```{R include=FALSE}
+require(cassowaryr)
+require(ggplot2)
+require(tidyr)
+require(dplyr)
+data(anscombe_tidy)
+```
+
+```{R echo=FALSE}
+labeller <- function(value) {
+  return(data.frame(
+    set=c(paste("Stringy Index = ", sc_stringy(anscombe$x1, anscombe$y1)),
+          paste("Stringy Index = ", sc_stringy(anscombe$x2, anscombe$y2)),
+          paste("Stringy Index = ", sc_stringy(anscombe$x3, anscombe$y3)),
+          paste("Stringy Index = ", sc_stringy(anscombe$x4, anscombe$y4))
+    )
+  ))
+}
+
+ggplot(anscombe_tidy, aes(x=x, y=y)) +
+  geom_point() +
+  facet_wrap(~set, ncol=2, scales = "free", labeller = labeller)
+```
+
+It is also worth noticing that, by calling `tourr::stringy()`, it returns a callable, which takes a 2-column matrix (which represents a series of points, x and y) as the only parameter:
+
+```{R}
+tourr::stringy()
+```
+
+The example usage would be:
+
+```{R}
+set.seed(42)
+
+# the sample cassowaryr library uses 11 points.
+mat <- matrix(runif(11 * 2), ncol=2) 
+
+# display the stringy index
+tourr::stringy()(mat)  # note the extra parenthesis
+
+# display the graph
+plot(x=mat[,1], y=mat[,2])
+```
+
+
+We therefore write the following simulation code.
+```{R}
+max_value <- -Inf
+min_value <- Inf
+max_mat <- NULL
+min_mat <- NULL
+
+for (i in 1:3000) {
+  mat <- matrix(runif(15 * 2), ncol = 2)
+  
+  s_index <- tourr::stringy()(mat)
+  
+  if (s_index > max_value) {
+    max_value <- s_index
+    max_mat <- mat
+  }
+  
+  if (s_index < min_value) {
+    min_value <- s_index
+    min_mat <- mat
+  }
+}
+
+max_df <- as.data.frame(max_mat)
+min_df <- as.data.frame(min_mat)
+
+max_df$label <- paste("Max stringy index = ", max_value)
+min_df$label <- paste("Min stringy index = ", min_value)
+
+df <- bind_rows(max_df, min_df)
+
+ggplot(df, aes(x = V1, y = V2)) +
+  geom_point() +
+  facet_wrap(~label, scales = "free", ncol = 2) + 
+  theme_minimal()
+```
+
+
+
 
